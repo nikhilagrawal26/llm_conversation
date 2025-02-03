@@ -1,3 +1,4 @@
+from copy import deepcopy
 from dataclasses import dataclass, field
 import ollama
 from rich.text import Text
@@ -20,14 +21,14 @@ class AIAgent:
 
     @property
     def messages(self) -> list[dict[str, str]]:
-        return self._messages
+        return deepcopy(self._messages)
 
     def chat(self, user_input: str) -> str:
-        self.messages.append({"role": "user", "content": user_input})
+        self._messages.append({"role": "user", "content": user_input})
 
         response = ollama.chat(
             model=self.model,
-            messages=self.messages,
+            messages=self._messages,
             options={
                 "num_ctx": self.ctx_size,
                 "temperature": self.temperature,
@@ -35,7 +36,7 @@ class AIAgent:
         )
 
         assistant_reply: str = response["message"]["content"]
-        self.messages.append({"role": "assistant", "content": assistant_reply})
+        self._messages.append({"role": "assistant", "content": assistant_reply})
         return assistant_reply
 
 
