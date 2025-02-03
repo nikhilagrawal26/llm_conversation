@@ -1,4 +1,5 @@
 from copy import deepcopy
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import TypedDict
 import ollama
@@ -55,9 +56,21 @@ class ConversationManager:
     agent1: AIAgent
     agent2: AIAgent
     initial_message: str | None
+    allow_termination: bool = False
     _conversation_log: list[ConversationLogItem] = field(
         default_factory=list, init=False
     )
+
+    def __post_init__(self):
+        # Modify system prompt to include termination instructions if allowed
+        if self.allow_termination:
+            termination_instruction = (
+                "You may terminate the conversation with the `<TERMINATE>` token "
+                "if you believe it has reached a natural conclusion. "
+                "Do not include the token in your message otherwise."
+            )
+            self.agent1.add_message("system", termination_instruction)
+            self.agent2.add_message("system", termination_instruction)
 
     def save_conversation(self, filename: str):
         with open(filename, "w", encoding="utf-8") as f:
@@ -81,11 +94,12 @@ class ConversationManager:
 
                 _ = f.write(f"{msg['agent']}: {msg['content']}\n")
 
-    def run_conversation(self):
+    def run_conversation(self) -> Iterator[tuple[str, str]]:
         """
         Generate an iterator of conversation responses.
 
-        :return: Iterator of (agent_name, message) tuples
+        Yields:
+            Iterator of (agent_name, message) tuples or None
         """
 
         last_message = self.initial_message
@@ -104,11 +118,21 @@ class ConversationManager:
         while True:
             current_agent = self.agent1 if is_agent1_turn else self.agent2
             last_message = current_agent.chat(last_message)
+            terminate = self.allow_termination and "<TERMINATE>" in last_message
+
+            # Check for termination token.
+            if terminate:
+                # Remove <TERMINATE> from the message to not pollute the conversation log.
+                last_message = last_message.replace("<TERMINATE>", "").strip()
+
             self._conversation_log.append(
                 {"agent": current_agent.name, "content": last_message}
             )
             yield (current_agent.name, last_message)
             is_agent1_turn = not is_agent1_turn
+
+            if terminate:
+                break
 
 
 def get_available_models() -> list[str]:
@@ -185,15 +209,24 @@ def main():
 
     console = Console()
     console.clear()
+
     agent1 = create_ai_agent(console, 1)
     console.clear()
     agent2 = create_ai_agent(console, 2)
     console.clear()
+
+    allow_termination = prompt(
+        "Allow AI agents to terminate the conversation? (y/N): "
+    ).lower() in ["y", "yes"]
     initial_message = prompt("Enter initial message (can be empty): ") or None
+
     console.clear()
 
     manager = ConversationManager(
-        agent1=agent1, agent2=agent2, initial_message=initial_message
+        agent1=agent1,
+        agent2=agent2,
+        initial_message=initial_message,
+        allow_termination=allow_termination,
     )
 
     console.print("=== Conversation Started ===\n", style="bold cyan")
@@ -211,9 +244,11 @@ def main():
             display_message(console, agent_name, color, message)
 
     except KeyboardInterrupt:
-        console.print("\n=== Conversation Ended ===\n", style="bold cyan")
-        manager.save_conversation("messages.txt")
-        console.print("\nConversation saved to messages.txt\n\n", style="bold yellow")
+        pass
+
+    console.print("\n=== Conversation Ended ===\n", style="bold cyan")
+    manager.save_conversation("messages.txt")
+    console.print("\nConversation saved to messages.txt\n\n", style="bold yellow")
 
 
 if __name__ == "__main__":
