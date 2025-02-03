@@ -106,9 +106,6 @@ class ConversationManager:
     agent1: AIAgent
     agent2: AIAgent
     initial_message: str
-    console: Console = field(default_factory=Console, repr=False)
-    color1: str = "blue"
-    color2: str = "green"
 
     def save_conversation(self, filename: str):
         with open(filename, "w", encoding="utf-8") as f:
@@ -135,44 +132,47 @@ class ConversationManager:
                 )
                 _ = f.write(f"{agent_name}: {msg['content']}\n")
 
-    def display_message(self, agent_name: str, color: str, message: str):
-        text = Text()
-        _ = text.append(f"{agent_name}:", style=f"{color} bold")
-        _ = text.append(f" {message}")
-        self.console.print(text)
-
     def run_conversation(self):
-        self.console.print("=== Conversation Started ===\n", style="bold cyan")
+        """
+        Generate an iterator of conversation responses.
 
+        :return: Iterator of (agent_name, message) tuples
+        """
+        # Start with initial message from the first agent
         self.agent1.messages.append(
             {"role": "assistant", "content": self.initial_message}
         )
-        self.display_message(self.agent1.name, self.color1, self.initial_message)
+
         last_message = self.initial_message
         is_agent1_turn = False
 
-        try:
-            while True:
-                current_agent = self.agent1 if is_agent1_turn else self.agent2
-                last_message = current_agent.chat(last_message)
-                self.console.print("")
-                self.console.rule()
-                self.console.print("")
-                self.display_message(
-                    current_agent.name,
-                    self.color1 if is_agent1_turn else self.color2,
-                    last_message,
-                )
-                is_agent1_turn = not is_agent1_turn
-        except KeyboardInterrupt:
-            self.console.print("\n=== Conversion Ended ===\n", style="bold cyan")
-            self.save_conversation("messages.txt")
-            self.console.print(
-                "\nConversation saved to messages.txt\n\n", style="bold yellow"
-            )
+        yield (self.agent1.name, self.initial_message)
+
+        while True:
+            # Alternate between agents
+            current_agent = self.agent1 if is_agent1_turn else self.agent2
+
+            # Generate response
+            last_message = current_agent.chat(last_message)
+
+            # Yield current response
+            yield (current_agent.name, last_message)
+
+            # Switch turns
+            is_agent1_turn = not is_agent1_turn
+
+
+def display_message(console: Console, agent_name: str, color: str, message: str):
+    text = Text()
+    _ = text.append(f"{agent_name}:", style=f"{color} bold")
+    _ = text.append(f" {message}")
+    console.print(text)
 
 
 def main():
+    color1: str = "blue"
+    color2: str = "green"
+
     console = Console()
     console.clear()
     agent1 = create_ai_agent(console, 1)
@@ -185,7 +185,25 @@ def main():
     manager = ConversationManager(
         agent1=agent1, agent2=agent2, initial_message=initial_message
     )
-    manager.run_conversation()
+
+    console.print("=== Conversation Started ===\n", style="bold cyan")
+    is_first_message = True
+
+    try:
+        for agent_name, message in manager.run_conversation():
+            if not is_first_message:
+                console.print("")
+                console.rule()
+                console.print("")
+
+            is_first_message = False
+            color = color1 if agent_name == agent1.name else color2
+            display_message(console, agent_name, color, message)
+
+    except KeyboardInterrupt:
+        console.print("\n=== Conversation Ended ===\n", style="bold cyan")
+        manager.save_conversation("messages.txt")
+        console.print("\nConversation saved to messages.txt\n\n", style="bold yellow")
 
 
 if __name__ == "__main__":
