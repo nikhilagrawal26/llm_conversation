@@ -53,18 +53,8 @@ def create_ai_agent(console: Console, agent_number: int) -> AIAgent:
         console.print(Text("• " + model))
     console.print("")
 
-    model_completer = WordCompleter(available_models, ignore_case=True)
-    model_name = (
-        prompt(
-            f"Enter model name (default: {available_models[0]}): ",
-            completer=model_completer,
-            complete_while_typing=True,
-        )
-        or available_models[0]
-    )
-
-    while model_name not in available_models:
-        console.print("Invalid model name!", style="bold red")
+    while True:
+        model_completer = WordCompleter(available_models, ignore_case=True)
         model_name = (
             prompt(
                 f"Enter model name (default: {available_models[0]}): ",
@@ -73,6 +63,11 @@ def create_ai_agent(console: Console, agent_number: int) -> AIAgent:
             )
             or available_models[0]
         )
+
+        if model_name in available_models:
+            break
+
+        console.print("Invalid model name!", style="bold red")
 
     while True:
         try:
