@@ -45,6 +45,61 @@ class AIAgent:
         return assistant_reply
 
 
+@dataclass
+class ConversationManager:
+    agent1: AIAgent
+    agent2: AIAgent
+    initial_message: str | None
+
+    def save_conversation(self, filename: str):
+        with open(filename, "w", encoding="utf-8") as f:
+            _ = f.write(f"=== Agent 1 ===\n\n")
+            _ = f.write(f"Name: {self.agent1.name}\n")
+            _ = f.write(f"Model: {self.agent1.model}\n")
+            _ = f.write(f"Temperature: {self.agent1.temperature}\n")
+            _ = f.write(f"Context Size: {self.agent1.ctx_size}\n")
+            _ = f.write(f"System Prompt: {self.agent1.system_prompt}\n\n")
+            _ = f.write(f"=== Agent 2 ===\n\n")
+            _ = f.write(f"Name: {self.agent2.name}\n")
+            _ = f.write(f"Model: {self.agent2.model}\n")
+            _ = f.write(f"Temperature: {self.agent2.temperature}\n")
+            _ = f.write(f"Context Size: {self.agent2.ctx_size}\n")
+            _ = f.write(f"System Prompt: {self.agent2.system_prompt}\n\n")
+            _ = f.write(f"=== Conversation ===\n\n")
+
+            for i, msg in enumerate(self.agent1.messages[1:]):
+                if i > 0:
+                    _ = f.write("\n" + "\u2500" * 80 + "\n\n")
+
+                agent_name = (
+                    self.agent1.name if msg["role"] == "assistant" else self.agent2.name
+                )
+                _ = f.write(f"{agent_name}: {msg['content']}\n")
+
+    def run_conversation(self):
+        """
+        Generate an iterator of conversation responses.
+
+        :return: Iterator of (agent_name, message) tuples
+        """
+
+        last_message = self.initial_message
+        is_agent1_turn = True
+
+        # If a non-empty initial message is provided, start with it.
+        if self.initial_message is not None:
+            # Make the first agent the one to say the initial message, and the second agent the one to respond.
+            self.agent1.add_message("assistant", self.initial_message)
+            yield (self.agent1.name, self.initial_message)
+            is_agent1_turn = False
+
+        while True:
+            current_agent = self.agent1 if is_agent1_turn else self.agent2
+            last_message = current_agent.chat(last_message)
+            yield (current_agent.name, last_message)
+            is_agent1_turn = not is_agent1_turn
+
+
 def get_available_models() -> list[str]:
     return [x.model or "" for x in ollama.list().models if x.model]
 
@@ -104,61 +159,6 @@ def create_ai_agent(console: Console, agent_number: int) -> AIAgent:
         temperature=temperature,
         ctx_size=ctx_size,
     )
-
-
-@dataclass
-class ConversationManager:
-    agent1: AIAgent
-    agent2: AIAgent
-    initial_message: str | None
-
-    def save_conversation(self, filename: str):
-        with open(filename, "w", encoding="utf-8") as f:
-            _ = f.write(f"=== Agent 1 ===\n\n")
-            _ = f.write(f"Name: {self.agent1.name}\n")
-            _ = f.write(f"Model: {self.agent1.model}\n")
-            _ = f.write(f"Temperature: {self.agent1.temperature}\n")
-            _ = f.write(f"Context Size: {self.agent1.ctx_size}\n")
-            _ = f.write(f"System Prompt: {self.agent1.system_prompt}\n\n")
-            _ = f.write(f"=== Agent 2 ===\n\n")
-            _ = f.write(f"Name: {self.agent2.name}\n")
-            _ = f.write(f"Model: {self.agent2.model}\n")
-            _ = f.write(f"Temperature: {self.agent2.temperature}\n")
-            _ = f.write(f"Context Size: {self.agent2.ctx_size}\n")
-            _ = f.write(f"System Prompt: {self.agent2.system_prompt}\n\n")
-            _ = f.write(f"=== Conversation ===\n\n")
-
-            for i, msg in enumerate(self.agent1.messages[1:]):
-                if i > 0:
-                    _ = f.write("\n" + "\u2500" * 80 + "\n\n")
-
-                agent_name = (
-                    self.agent1.name if msg["role"] == "assistant" else self.agent2.name
-                )
-                _ = f.write(f"{agent_name}: {msg['content']}\n")
-
-    def run_conversation(self):
-        """
-        Generate an iterator of conversation responses.
-
-        :return: Iterator of (agent_name, message) tuples
-        """
-
-        last_message = self.initial_message
-        is_agent1_turn = True
-
-        # If a non-empty initial message is provided, start with it.
-        if self.initial_message is not None:
-            # Make the first agent the one to say the initial message, and the second agent the one to respond.
-            self.agent1.add_message("assistant", self.initial_message)
-            yield (self.agent1.name, self.initial_message)
-            is_agent1_turn = False
-
-        while True:
-            current_agent = self.agent1 if is_agent1_turn else self.agent2
-            last_message = current_agent.chat(last_message)
-            yield (current_agent.name, last_message)
-            is_agent1_turn = not is_agent1_turn
 
 
 def display_message(console: Console, agent_name: str, color: str, message: str):
