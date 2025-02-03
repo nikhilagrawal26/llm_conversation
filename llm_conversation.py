@@ -1,5 +1,6 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
+from typing import TypedDict
 import ollama
 from rich.text import Text
 from rich.console import Console
@@ -14,7 +15,7 @@ class AIAgent:
     model: str
     temperature: float = 0.8
     ctx_size: int = 2048
-    _messages: list[dict[str, str]] = field(init=False)
+    _messages: list[dict[str, str]] = field(default_factory=list, init=False)
 
     def __post_init__(self):
         self._messages = [{"role": "system", "content": self.system_prompt}]
@@ -47,9 +48,16 @@ class AIAgent:
 
 @dataclass
 class ConversationManager:
+    class ConversationLogItem(TypedDict):
+        agent: str
+        content: str
+
     agent1: AIAgent
     agent2: AIAgent
     initial_message: str | None
+    _conversation_log: list[ConversationLogItem] = field(
+        default_factory=list, init=False
+    )
 
     def save_conversation(self, filename: str):
         with open(filename, "w", encoding="utf-8") as f:
@@ -67,14 +75,11 @@ class ConversationManager:
             _ = f.write(f"System Prompt: {self.agent2.system_prompt}\n\n")
             _ = f.write(f"=== Conversation ===\n\n")
 
-            for i, msg in enumerate(self.agent1.messages[1:]):
+            for i, msg in enumerate(self._conversation_log):
                 if i > 0:
                     _ = f.write("\n" + "\u2500" * 80 + "\n\n")
 
-                agent_name = (
-                    self.agent1.name if msg["role"] == "assistant" else self.agent2.name
-                )
-                _ = f.write(f"{agent_name}: {msg['content']}\n")
+                _ = f.write(f"{msg['agent']}: {msg['content']}\n")
 
     def run_conversation(self):
         """
@@ -90,12 +95,18 @@ class ConversationManager:
         if self.initial_message is not None:
             # Make the first agent the one to say the initial message, and the second agent the one to respond.
             self.agent1.add_message("assistant", self.initial_message)
+            self._conversation_log.append(
+                {"agent": self.agent1.name, "content": self.initial_message}
+            )
             yield (self.agent1.name, self.initial_message)
             is_agent1_turn = False
 
         while True:
             current_agent = self.agent1 if is_agent1_turn else self.agent2
             last_message = current_agent.chat(last_message)
+            self._conversation_log.append(
+                {"agent": current_agent.name, "content": last_message}
+            )
             yield (current_agent.name, last_message)
             is_agent1_turn = not is_agent1_turn
 
