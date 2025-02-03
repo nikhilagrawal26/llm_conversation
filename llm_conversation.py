@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import cast
 import ollama
 from rich.text import Text
 from rich.console import Console
@@ -11,6 +12,8 @@ class AIAgent:
     name: str
     system_prompt: str
     model: str
+    temperature: float = 0.8
+    ctx_size: int = 2048
     _messages: list[dict[str, str]] = field(init=False)
 
     def __post_init__(self):
@@ -20,13 +23,16 @@ class AIAgent:
     def messages(self) -> list[dict[str, str]]:
         return self._messages
 
-    def chat(self, user_input: str, temperature: float = 0.7) -> str:
+    def chat(self, user_input: str) -> str:
         self.messages.append({"role": "user", "content": user_input})
 
         response = ollama.chat(
             model=self.model,
             messages=self.messages,
-            options={"temperature": temperature},
+            options={
+                "num_ctx": self.ctx_size,
+                "temperature": self.temperature,
+            },
         )
 
         assistant_reply: str = response["message"]["content"]
@@ -78,6 +84,32 @@ class ConversationManager:
                 or available_models[0]
             )
 
+        while True:
+            try:
+                temperature_str: str = (
+                    prompt("Enter temperature (default: 0.8): ") or "0.8"
+                )
+                temperature: float = float(temperature_str)
+                if not (0.0 <= temperature <= 1.0):
+                    raise ValueError("Temperature must be between 0.0 and 1.0")
+                break
+            except ValueError as e:
+                self.console.print(f"Invalid input: {e}", style="bold red")
+
+        while True:
+            try:
+                ctx_size_str: str = (
+                    prompt("Enter context size (default: 2048): ") or "2048"
+                )
+                ctx_size: int = int(ctx_size_str)
+                if ctx_size < 0:
+                    raise ValueError("Context size must be a non-negative integer")
+                break
+            except ValueError as e:
+                self.console.print(f"Invalid input: {e}", style="bold red")
+
+        self.console.print("")
+
         name_1 = prompt("Enter name for AI 1 (default: AI 1): ") or "AI 1"
         name_2 = prompt("Enter name for AI 2 (default: AI 2): ") or "AI 2"
         self.console.print("")
@@ -91,12 +123,16 @@ class ConversationManager:
             name=name_1,
             system_prompt=system_prompt_1,
             model=model_name,
+            temperature=temperature,
+            ctx_size=ctx_size,
         )
 
         self.agent2 = AIAgent(
             name=name_2,
             system_prompt=system_prompt_2,
             model=model_name,
+            temperature=temperature,
+            ctx_size=ctx_size,
         )
 
     def save_conversation(self, filename: str):
@@ -104,7 +140,10 @@ class ConversationManager:
             raise RuntimeError("Conversation not initialized")
 
         with open(filename, "w", encoding="utf-8") as f:
-            _ = f.write(f"Conversation using model: {self.agent1.model}\n\n")
+            _ = f.write(f"=== Details ===\n\n")
+            _ = f.write(f"Model: {self.agent1.model}\n")
+            _ = f.write(f"Temperature: {self.agent1.temperature}\n")
+            _ = f.write(f"Context Size: {self.agent1.ctx_size}\n\n")
             _ = f.write(f"=== Agents ===\n\n")
             _ = f.write(
                 f"Name: {self.agent1.name}\nSystem Prompt: {self.agent1.system_prompt}\n\n"
