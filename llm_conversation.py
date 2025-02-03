@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import cast
 import ollama
 from rich.text import Text
 from rich.console import Console
@@ -40,30 +39,31 @@ class AIAgent:
         return assistant_reply
 
 
-@dataclass
-class ConversationManager:
-    console: Console = field(default_factory=Console)
-    agent1: AIAgent | None = None
-    agent2: AIAgent | None = None
-    color1: str = "blue"
-    color2: str = "green"
-    initial_message: str = ""
+def get_available_models() -> list[str]:
+    return [x.model or "" for x in ollama.list().models if x.model]
 
-    @staticmethod
-    def get_available_models() -> list[str]:
-        return [x.model or "" for x in ollama.list().models if x.model]
 
-    def setup_conversation(self) -> None:
-        available_models = self.get_available_models()
+def create_ai_agent(console: Console, agent_number: int) -> AIAgent:
+    console.print(f"=== Creating AI Agent {agent_number} ===", style="bold cyan")
 
-        self.console.print("\n=== Available Models ===", style="bold cyan")
+    available_models = get_available_models()
+    console.print("\nAvailable Models:", style="bold")
+    for model in available_models:
+        console.print(Text("• " + model))
+    console.print("")
 
-        for model in available_models:
-            self.console.print(Text("• " + model))
+    model_completer = WordCompleter(available_models, ignore_case=True)
+    model_name = (
+        prompt(
+            f"Enter model name (default: {available_models[0]}): ",
+            completer=model_completer,
+            complete_while_typing=True,
+        )
+        or available_models[0]
+    )
 
-        self.console.print("")
-
-        model_completer = WordCompleter(available_models, ignore_case=True)
+    while model_name not in available_models:
+        console.print("Invalid model name!", style="bold red")
         model_name = (
             prompt(
                 f"Enter model name (default: {available_models[0]}): ",
@@ -73,88 +73,64 @@ class ConversationManager:
             or available_models[0]
         )
 
-        while model_name not in available_models:
-            self.console.print("Invalid model name!", style="bold red")
-            model_name = (
-                prompt(
-                    f"Enter model name (default: {available_models[0]}): ",
-                    completer=model_completer,
-                    complete_while_typing=True,
-                )
-                or available_models[0]
-            )
+    while True:
+        try:
+            temperature_str: str = prompt("Enter temperature (default: 0.8): ") or "0.8"
+            temperature: float = float(temperature_str)
+            if not (0.0 <= temperature <= 1.0):
+                raise ValueError("Temperature must be between 0.0 and 1.0")
+            break
+        except ValueError as e:
+            console.print(f"Invalid input: {e}", style="bold red")
 
-        while True:
-            try:
-                temperature_str: str = (
-                    prompt("Enter temperature (default: 0.8): ") or "0.8"
-                )
-                temperature: float = float(temperature_str)
-                if not (0.0 <= temperature <= 1.0):
-                    raise ValueError("Temperature must be between 0.0 and 1.0")
-                break
-            except ValueError as e:
-                self.console.print(f"Invalid input: {e}", style="bold red")
+    while True:
+        try:
+            ctx_size_str: str = prompt("Enter context size (default: 2048): ") or "2048"
+            ctx_size: int = int(ctx_size_str)
+            if ctx_size < 0:
+                raise ValueError("Context size must be a non-negative integer")
+            break
+        except ValueError as e:
+            console.print(f"Invalid input: {e}", style="bold red")
 
-        while True:
-            try:
-                ctx_size_str: str = (
-                    prompt("Enter context size (default: 2048): ") or "2048"
-                )
-                ctx_size: int = int(ctx_size_str)
-                if ctx_size < 0:
-                    raise ValueError("Context size must be a non-negative integer")
-                break
-            except ValueError as e:
-                self.console.print(f"Invalid input: {e}", style="bold red")
+    name = prompt(f"Enter name (default: AI {agent_number}): ") or f"AI {agent_number}"
+    system_prompt = prompt(f"Enter system prompt for {name}: ")
 
-        self.console.print("")
+    return AIAgent(
+        name=name,
+        system_prompt=system_prompt,
+        model=model_name,
+        temperature=temperature,
+        ctx_size=ctx_size,
+    )
 
-        name_1 = prompt("Enter name for AI 1 (default: AI 1): ") or "AI 1"
-        name_2 = prompt("Enter name for AI 2 (default: AI 2): ") or "AI 2"
-        self.console.print("")
-        system_prompt_1 = prompt(f"Enter system prompt for {name_1}: ")
-        self.console.print("")
-        system_prompt_2 = prompt(f"Enter system prompt for {name_2}: ")
-        self.console.print("")
-        self.initial_message = prompt("Enter initial message: ", default="Hello")
 
-        self.agent1 = AIAgent(
-            name=name_1,
-            system_prompt=system_prompt_1,
-            model=model_name,
-            temperature=temperature,
-            ctx_size=ctx_size,
-        )
-
-        self.agent2 = AIAgent(
-            name=name_2,
-            system_prompt=system_prompt_2,
-            model=model_name,
-            temperature=temperature,
-            ctx_size=ctx_size,
-        )
+@dataclass
+class ConversationManager:
+    agent1: AIAgent
+    agent2: AIAgent
+    initial_message: str
+    console: Console = field(default_factory=Console, repr=False)
+    color1: str = "blue"
+    color2: str = "green"
 
     def save_conversation(self, filename: str):
-        if not (self.agent1 and self.agent2):
-            raise RuntimeError("Conversation not initialized")
-
         with open(filename, "w", encoding="utf-8") as f:
-            _ = f.write(f"=== Details ===\n\n")
+            _ = f.write(f"=== Agent 1 ===\n\n")
+            _ = f.write(f"Name: {self.agent1.name}\n")
             _ = f.write(f"Model: {self.agent1.model}\n")
             _ = f.write(f"Temperature: {self.agent1.temperature}\n")
-            _ = f.write(f"Context Size: {self.agent1.ctx_size}\n\n")
-            _ = f.write(f"=== Agents ===\n\n")
-            _ = f.write(
-                f"Name: {self.agent1.name}\nSystem Prompt: {self.agent1.system_prompt}\n\n"
-            )
-            _ = f.write(
-                f"Name: {self.agent2.name}\nSystem Prompt: {self.agent2.system_prompt}\n\n"
-            )
+            _ = f.write(f"Context Size: {self.agent1.ctx_size}\n")
+            _ = f.write(f"System Prompt: {self.agent1.system_prompt}\n\n")
+            _ = f.write(f"=== Agent 2 ===\n\n")
+            _ = f.write(f"Name: {self.agent2.name}\n")
+            _ = f.write(f"Model: {self.agent2.model}\n")
+            _ = f.write(f"Temperature: {self.agent2.temperature}\n")
+            _ = f.write(f"Context Size: {self.agent2.ctx_size}\n")
+            _ = f.write(f"System Prompt: {self.agent2.system_prompt}\n\n")
             _ = f.write(f"=== Conversation ===\n\n")
 
             for i, msg in enumerate(self.agent1.messages[1:]):
-                # Add separator between messages, except for the first message.
                 if i > 0:
                     _ = f.write("\n" + "\u2500" * 80 + "\n\n")
 
@@ -170,10 +146,7 @@ class ConversationManager:
         self.console.print(text)
 
     def run_conversation(self):
-        if not (self.agent1 and self.agent2):
-            raise RuntimeError("Conversation not initialized")
-
-        self.console.print("\n=== Conversation Started ===\n", style="bold cyan")
+        self.console.print("=== Conversation Started ===\n", style="bold cyan")
 
         self.agent1.messages.append(
             {"role": "assistant", "content": self.initial_message}
@@ -201,12 +174,21 @@ class ConversationManager:
             self.console.print(
                 "\nConversation saved to messages.txt\n\n", style="bold yellow"
             )
-            exit(0)
 
 
 def main():
-    manager = ConversationManager()
-    manager.setup_conversation()
+    console = Console()
+    console.clear()
+    agent1 = create_ai_agent(console, 1)
+    console.clear()
+    agent2 = create_ai_agent(console, 2)
+    console.clear()
+    initial_message = prompt("Enter initial message: ", default="Hello")
+    console.clear()
+
+    manager = ConversationManager(
+        agent1=agent1, agent2=agent2, initial_message=initial_message
+    )
     manager.run_conversation()
 
 
