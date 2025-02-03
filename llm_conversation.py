@@ -23,8 +23,13 @@ class AIAgent:
     def messages(self) -> list[dict[str, str]]:
         return deepcopy(self._messages)
 
-    def chat(self, user_input: str) -> str:
-        self._messages.append({"role": "user", "content": user_input})
+    def add_message(self, role: str, content: str):
+        self._messages.append({"role": role, "content": content})
+
+    def chat(self, user_input: str | None) -> str:
+        # `None` user_input means the agent is starting the conversation or responding multiple times.
+        if user_input is not None:
+            self.add_message("user", user_input)
 
         response = ollama.chat(
             model=self.model,
@@ -36,7 +41,7 @@ class AIAgent:
         )
 
         assistant_reply: str = response["message"]["content"]
-        self._messages.append({"role": "assistant", "content": assistant_reply})
+        self.add_message("assistant", assistant_reply)
         return assistant_reply
 
 
@@ -105,7 +110,7 @@ def create_ai_agent(console: Console, agent_number: int) -> AIAgent:
 class ConversationManager:
     agent1: AIAgent
     agent2: AIAgent
-    initial_message: str
+    initial_message: str | None
 
     def save_conversation(self, filename: str):
         with open(filename, "w", encoding="utf-8") as f:
@@ -138,27 +143,21 @@ class ConversationManager:
 
         :return: Iterator of (agent_name, message) tuples
         """
-        # Start with initial message from the first agent
-        self.agent1.messages.append(
-            {"role": "assistant", "content": self.initial_message}
-        )
 
         last_message = self.initial_message
-        is_agent1_turn = False
+        is_agent1_turn = True
 
-        yield (self.agent1.name, self.initial_message)
+        # If a non-empty initial message is provided, start with it.
+        if self.initial_message is not None:
+            # Make the first agent the one to say the initial message, and the second agent the one to respond.
+            self.agent1.add_message("assistant", self.initial_message)
+            yield (self.agent1.name, self.initial_message)
+            is_agent1_turn = False
 
         while True:
-            # Alternate between agents
             current_agent = self.agent1 if is_agent1_turn else self.agent2
-
-            # Generate response
             last_message = current_agent.chat(last_message)
-
-            # Yield current response
             yield (current_agent.name, last_message)
-
-            # Switch turns
             is_agent1_turn = not is_agent1_turn
 
 
@@ -179,7 +178,7 @@ def main():
     console.clear()
     agent2 = create_ai_agent(console, 2)
     console.clear()
-    initial_message = prompt("Enter initial message: ", default="Hello")
+    initial_message = prompt("Enter initial message (can be empty): ") or None
     console.clear()
 
     manager = ConversationManager(
