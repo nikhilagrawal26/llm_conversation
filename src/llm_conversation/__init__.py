@@ -7,9 +7,9 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.text import Text
 
-from ai_agent import AIAgent
-from config_parser import AgentConfig, get_available_models, load_config
-from conversation_manager import ConversationManager
+from .ai_agent import AIAgent
+from .config import AgentConfig, get_available_models, load_config
+from .conversation_manager import ConversationManager
 
 
 def create_ai_agent_from_config(config: AgentConfig) -> AIAgent:

@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TypedDict
 
-from ai_agent import AIAgent
+from .ai_agent import AIAgent
 
 
 @dataclass

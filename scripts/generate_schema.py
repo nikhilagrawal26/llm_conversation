@@ -6,7 +6,7 @@ Generate JSON schema for the configuration file using Pydantic.
 
 import json
 
-from config_parser import Config
+from src.llm_conversation.config import Config
 
 
 def main():
