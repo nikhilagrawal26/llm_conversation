@@ -104,7 +104,6 @@ def prompt_bool(prompt_text: str, default: bool = False) -> bool:
     return response[0] == "y"
 
 
-# TODO: Allow using a JSON file to configure the conversation instead of prompting the user.
 def main():
     parser = argparse.ArgumentParser(description="Run a conversation between AI agents")
     _ = parser.add_argument(
