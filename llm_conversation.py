@@ -51,6 +51,7 @@ class AIAgent:
         if user_input is not None:
             self.add_message("user", user_input)
 
+        # TODO: Stream the conversation instead of sending all of the messages at once.
         response = ollama.chat(
             model=self.model,
             messages=self._messages,
@@ -71,6 +72,7 @@ class ConversationManager:
         agent: str
         content: str
 
+    # TODO: Extend this to support more than two agents.
     agent1: AIAgent
     agent2: AIAgent
     initial_message: str | None
@@ -244,6 +246,7 @@ def prompt_bool(prompt_text: str, default: bool = False) -> bool:
     return response[0] == "y"
 
 
+# TODO: Allow using a JSON file to configure the conversation instead of prompting the user.
 def main():
     color1: str = "blue"
     color2: str = "green"
