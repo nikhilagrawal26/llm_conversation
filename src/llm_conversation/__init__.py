@@ -4,9 +4,8 @@ from pathlib import Path
 
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
-from rich.console import Console, Group
+from rich.console import Console
 from rich.live import Live
-from rich.markdown import Markdown
 from rich.text import Text
 
 from .ai_agent import AIAgent
@@ -82,25 +81,11 @@ def create_ai_agent_from_input(console: Console, agent_number: int) -> AIAgent:
     )
 
 
-def markdown_to_text(markdown_content: str) -> Text:
-    """Convert Markdown content to a styled Text object."""
-    console = Console()
-    md = Markdown(markdown_content)
-    segments = list(console.render(md))
-    result = Text()
-    for segment in segments:
-        _ = result.append(segment.text, style=segment.style)
-
-    result.rstrip()
-    return result
-
-
 def display_message(
     console: Console,
     agent_name: str,
     name_color: str,
     message_stream: Iterator[str],
-    use_markdown: bool = False,
 ):
     """
     Display a message from an agent in the console.
@@ -110,7 +95,6 @@ def display_message(
         agent_name (str): Name of the agent.
         name_color (str): Color to use for the agent name.
         message_stream (Iterator[str]): Stream of message chunks.
-        use_markdown (bool, optional): Whether to use Markdown for text formatting. Defaults to False.
     """
     # Create the agent name prefix as a Text object.
     agent_prefix = Text.from_markup(f"[{name_color}]{agent_name}[/{name_color}]: ")
@@ -120,8 +104,7 @@ def display_message(
         for chunk in message_stream:
             content += chunk
             # Create a group that holds both the agent prefix and the content.
-            content_text = markdown_to_text(content) if use_markdown else Text(content)
-            live.update(agent_prefix + content_text, refresh=True)
+            live.update(agent_prefix + Text(content), refresh=True)
 
 
 def prompt_bool(prompt_text: str, default: bool = False) -> bool:
@@ -158,7 +141,6 @@ def main():
         agent1 = create_ai_agent_from_config(config.agent1)
         agent2 = create_ai_agent_from_config(config.agent2)
         settings = config.settings
-        use_markdown = settings.use_markdown or False
         allow_termination = settings.allow_termination or False
         initial_message = settings.initial_message
     else:
@@ -167,9 +149,6 @@ def main():
         agent2 = create_ai_agent_from_input(console, 2)
         console.clear()
 
-        use_markdown = prompt_bool(
-            "Use Markdown for text formatting? (y/N): ", default=False
-        )
         allow_termination = prompt_bool(
             "Allow AI agents to terminate the conversation? (y/N): ", default=False
         )
@@ -181,7 +160,6 @@ def main():
         agent1=agent1,
         agent2=agent2,
         initial_message=initial_message,
-        use_markdown=use_markdown,
         allow_termination=allow_termination,
     )
 
@@ -197,7 +175,7 @@ def main():
 
             is_first_message = False
             color = color1 if agent_name == agent1.name else color2
-            display_message(console, agent_name, color, message, use_markdown)
+            display_message(console, agent_name, color, message)
 
     except KeyboardInterrupt:
         pass

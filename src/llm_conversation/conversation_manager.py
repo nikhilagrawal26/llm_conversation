@@ -16,7 +16,6 @@ class ConversationManager:
     agent1: AIAgent
     agent2: AIAgent
     initial_message: str | None
-    use_markdown: bool = False
     allow_termination: bool = False
     _conversation_log: list[ConversationLogItem] = field(
         default_factory=list, init=False
@@ -25,12 +24,6 @@ class ConversationManager:
     def __post_init__(self):
         # Modify system prompt to include termination instructions if allowed
         instruction: str = ""
-
-        if self.use_markdown:
-            instruction += (
-                "\n\nYou may use Markdown for text formatting. "
-                "Examples: *italic*, **bold**, `code`, [link](https://example.com), etc."
-            )
 
         if self.allow_termination:
             instruction += (
