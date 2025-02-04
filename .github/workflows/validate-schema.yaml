@@ -1,0 +1,36 @@
+name: Validate Schema
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  validate-schema:
+    name: Check Schema Consistency
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Generate schema and check for changes
+        run: |
+          #
+          python -m scripts.generate_schema > schema.tmp.json
+          if ! cmp -s schema.tmp.json schema.json; then
+            echo "❌ schema.json is outdated. Run scripts/generate_schema.py and commit the updated file."
+            exit 1
+          fi
