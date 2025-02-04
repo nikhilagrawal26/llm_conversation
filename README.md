@@ -71,6 +71,8 @@ Alternatively, you can provide a JSON configuration file with the following stru
 }
 ```
 
+You can take a look at the [JSON configuration schema](schema.json) for more details.
+
 ### Running the Program
 
 1. To run with interactive setup:
