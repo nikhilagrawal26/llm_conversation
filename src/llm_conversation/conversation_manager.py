@@ -26,6 +26,7 @@ class ConversationManager:
         instruction: str = ""
 
         if self.allow_termination:
+            # TODO: Filter out the `<TERMINATE>` token from the output to prevent it from displaying.
             instruction += (
                 "\n\nYou may terminate the conversation with the `<TERMINATE>` token "
                 "if you believe it has reached a natural conclusion. "
@@ -35,6 +36,7 @@ class ConversationManager:
         self.agent1.system_prompt += instruction
         self.agent2.system_prompt += instruction
 
+    # TODO: Support JSON output.
     def save_conversation(self, filename: Path):
         with open(filename, "w", encoding="utf-8") as f:
             _ = f.write(f"=== Agent 1 ===\n\n")
