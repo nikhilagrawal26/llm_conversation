@@ -5,25 +5,43 @@ from typing import TypedDict
 import ollama
 from rich.text import Text
 from rich.console import Console
+from rich.markdown import Markdown
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 
 
-@dataclass
 class AIAgent:
     name: str
-    system_prompt: str
     model: str
     temperature: float = 0.8
     ctx_size: int = 2048
-    _messages: list[dict[str, str]] = field(default_factory=list, init=False)
+    _messages: list[dict[str, str]]
 
-    def __post_init__(self):
-        self._messages = [{"role": "system", "content": self.system_prompt}]
+    def __init__(
+        self,
+        name: str,
+        model: str,
+        temperature: float,
+        ctx_size: int,
+        system_prompt: str,
+    ):
+        self.name = name
+        self.model = model
+        self.temperature = temperature
+        self.ctx_size = ctx_size
+        self._messages = [{"role": "system", "content": system_prompt}]
 
     @property
     def messages(self) -> list[dict[str, str]]:
         return deepcopy(self._messages)
+
+    @property
+    def system_prompt(self) -> str:
+        return self._messages[0]["content"]
+
+    @system_prompt.setter
+    def system_prompt(self, value: str):
+        self._messages[0]["content"] = value
 
     def add_message(self, role: str, content: str):
         self._messages.append({"role": role, "content": content})
@@ -56,6 +74,7 @@ class ConversationManager:
     agent1: AIAgent
     agent2: AIAgent
     initial_message: str | None
+    use_markdown: bool = False
     allow_termination: bool = False
     _conversation_log: list[ConversationLogItem] = field(
         default_factory=list, init=False
@@ -63,14 +82,23 @@ class ConversationManager:
 
     def __post_init__(self):
         # Modify system prompt to include termination instructions if allowed
+        instruction: str = ""
+
+        if self.use_markdown:
+            instruction += (
+                "\n\nYou may use Markdown for text formatting. "
+                "Examples: *italic*, **bold**, `code`, [link](https://example.com), etc."
+            )
+
         if self.allow_termination:
-            termination_instruction = (
-                "You may terminate the conversation with the `<TERMINATE>` token "
+            instruction += (
+                "\n\nYou may terminate the conversation with the `<TERMINATE>` token "
                 "if you believe it has reached a natural conclusion. "
                 "Do not include the token in your message otherwise."
             )
-            self.agent1.add_message("system", termination_instruction)
-            self.agent2.add_message("system", termination_instruction)
+
+        self.agent1.system_prompt += instruction
+        self.agent2.system_prompt += instruction
 
     def save_conversation(self, filename: str):
         with open(filename, "w", encoding="utf-8") as f:
@@ -189,18 +217,31 @@ def create_ai_agent(console: Console, agent_number: int) -> AIAgent:
 
     return AIAgent(
         name=name,
-        system_prompt=system_prompt,
         model=model_name,
         temperature=temperature,
         ctx_size=ctx_size,
+        system_prompt=system_prompt,
     )
 
 
-def display_message(console: Console, agent_name: str, color: str, message: str):
-    text = Text()
-    _ = text.append(f"{agent_name}:", style=f"{color} bold")
-    _ = text.append(f" {message}")
-    console.print(text)
+def display_message(
+    console: Console,
+    agent_name: str,
+    name_color: str,
+    message: str,
+    use_markdown: bool = False,
+):
+    console.print(Text.from_markup(f"[{name_color}]{agent_name}[/{name_color}]: "), end="", soft_wrap=True)
+    console.print(Markdown(message) if use_markdown else Text(message), soft_wrap=True)
+
+
+def prompt_bool(prompt_text: str, default: bool = False) -> bool:
+    response = prompt(prompt_text).lower()
+
+    if not response or response not in ["y", "yes", "n", "no"]:
+        return default
+
+    return response[0] == "y"
 
 
 def main():
@@ -215,9 +256,12 @@ def main():
     agent2 = create_ai_agent(console, 2)
     console.clear()
 
-    allow_termination = prompt(
-        "Allow AI agents to terminate the conversation? (y/N): "
-    ).lower() in ["y", "yes"]
+    use_markdown = prompt_bool(
+        "Use Markdown for text formatting? (y/N): ", default=False
+    )
+    allow_termination = prompt_bool(
+        "Allow AI agents to terminate the conversation? (y/N): ", default=False
+    )
     initial_message = prompt("Enter initial message (can be empty): ") or None
 
     console.clear()
@@ -226,6 +270,7 @@ def main():
         agent1=agent1,
         agent2=agent2,
         initial_message=initial_message,
+        use_markdown=use_markdown,
         allow_termination=allow_termination,
     )
 
@@ -241,7 +286,7 @@ def main():
 
             is_first_message = False
             color = color1 if agent_name == agent1.name else color2
-            display_message(console, agent_name, color, message)
+            display_message(console, agent_name, color, message, use_markdown)
 
     except KeyboardInterrupt:
         pass
