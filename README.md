@@ -106,4 +106,4 @@ Feel free to submit issues and pull requests for bug fixes or new features. Do k
 
 ## License
 
-This software is licensed under the GNU Affero General Public License v3.0 or any later version. See [LICENSE.txt]() for more details.
+This software is licensed under the GNU Affero General Public License v3.0 or any later version. See [LICENSE](LICENSE) for more details.
