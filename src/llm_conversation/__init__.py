@@ -107,10 +107,10 @@ def prompt_bool(prompt_text: str, default: bool = False) -> bool:
 def main():
     parser = argparse.ArgumentParser(description="Run a conversation between AI agents")
     _ = parser.add_argument(
-        "--output", type=Path, help="Path to save the conversation log to"
+        "-o", "--output", type=Path, help="Path to save the conversation log to"
     )
     _ = parser.add_argument(
-        "--config", type=Path, help="Path to JSON configuration file"
+        "-c", "--config", type=Path, help="Path to JSON configuration file"
     )
     args = parser.parse_args()
 
