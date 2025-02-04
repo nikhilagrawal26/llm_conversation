@@ -25,8 +25,9 @@ class ConversationManager:
         # Modify system prompt to include termination instructions if allowed
         instruction: str = ""
 
+        # TODO: Make the <TERMINATE> token prompt stronger. Right now the agent often confuses it or forgets about it
+        # and can't use it properly.
         if self.allow_termination:
-            # TODO: Filter out the `<TERMINATE>` token from the output to prevent it from displaying.
             instruction += (
                 "\n\nYou may terminate the conversation with the `<TERMINATE>` token "
                 "if you believe it has reached a natural conclusion. "
@@ -101,6 +102,7 @@ class ConversationManager:
             )
 
             # Check for termination token.
+            # TODO: Filter out the `<TERMINATE>` token from the output to prevent it from displaying.
             if self.allow_termination and "<TERMINATE>" in last_message:
                 break
 
