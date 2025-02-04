@@ -1,9 +1,11 @@
 import argparse
+from collections.abc import Iterator
 from pathlib import Path
 
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
-from rich.console import Console
+from rich.console import Console, Group
+from rich.live import Live
 from rich.markdown import Markdown
 from rich.text import Text
 
@@ -80,19 +82,46 @@ def create_ai_agent_from_input(console: Console, agent_number: int) -> AIAgent:
     )
 
 
+def markdown_to_text(markdown_content: str) -> Text:
+    """Convert Markdown content to a styled Text object."""
+    console = Console()
+    md = Markdown(markdown_content)
+    segments = list(console.render(md))
+    result = Text()
+    for segment in segments:
+        _ = result.append(segment.text, style=segment.style)
+
+    result.rstrip()
+    return result
+
+
 def display_message(
     console: Console,
     agent_name: str,
     name_color: str,
-    message: str,
+    message_stream: Iterator[str],
     use_markdown: bool = False,
 ):
-    console.print(
-        Text.from_markup(f"[{name_color}]{agent_name}[/{name_color}]: "),
-        end="",
-        soft_wrap=True,
-    )
-    console.print(Markdown(message) if use_markdown else Text(message), soft_wrap=True)
+    """
+    Display a message from an agent in the console.
+
+    Args:
+        console (Console): Rich console instance.
+        agent_name (str): Name of the agent.
+        name_color (str): Color to use for the agent name.
+        message_stream (Iterator[str]): Stream of message chunks.
+        use_markdown (bool, optional): Whether to use Markdown for text formatting. Defaults to False.
+    """
+    # Create the agent name prefix as a Text object.
+    agent_prefix = Text.from_markup(f"[{name_color}]{agent_name}[/{name_color}]: ")
+
+    content = ""
+    with Live("", console=console, transient=False, refresh_per_second=10) as live:
+        for chunk in message_stream:
+            content += chunk
+            # Create a group that holds both the agent prefix and the content.
+            content_text = markdown_to_text(content) if use_markdown else Text(content)
+            live.update(agent_prefix + content_text, refresh=True)
 
 
 def prompt_bool(prompt_text: str, default: bool = False) -> bool:

@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from copy import deepcopy
 
 import ollama
@@ -39,21 +40,26 @@ class AIAgent:
     def add_message(self, role: str, content: str):
         self._messages.append({"role": role, "content": content})
 
-    def chat(self, user_input: str | None) -> str:
+    # TODO: Make chat take the entire conversation history as input.
+    def chat(self, user_input: str | None) -> Iterator[str]:
         # `None` user_input means the agent is starting the conversation or responding multiple times.
         if user_input is not None:
             self.add_message("user", user_input)
 
-        # TODO: Stream the conversation instead of sending all of the messages at once.
-        response = ollama.chat(
+        response_stream = ollama.chat(
             model=self.model,
             messages=self._messages,
             options={
                 "num_ctx": self.ctx_size,
                 "temperature": self.temperature,
             },
+            stream=True,  # Enable streaming
         )
 
-        assistant_reply: str = response["message"]["content"]
-        self.add_message("assistant", assistant_reply)
-        return assistant_reply
+        chunks: list[str] = []
+        for chunk in response_stream:
+            content: str = chunk["message"]["content"]
+            chunks.append(content)
+            yield content  # Stream chunks as they arrive
+
+        self.add_message("assistant", "".join(chunks).strip())

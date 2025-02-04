@@ -64,7 +64,7 @@ class ConversationManager:
 
                 _ = f.write(f"{msg['agent']}: {msg['content']}\n")
 
-    def run_conversation(self) -> Iterator[tuple[str, str]]:
+    def run_conversation(self) -> Iterator[tuple[str, Iterator[str]]]:
         """
         Generate an iterator of conversation responses.
 
@@ -82,24 +82,31 @@ class ConversationManager:
             self._conversation_log.append(
                 {"agent": self.agent1.name, "content": self.initial_message}
             )
-            yield (self.agent1.name, self.initial_message)
+            yield (self.agent1.name, iter([self.initial_message]))
             is_agent1_turn = False
 
         while True:
             current_agent = self.agent1 if is_agent1_turn else self.agent2
-            last_message = current_agent.chat(last_message)
-            terminate = self.allow_termination and "<TERMINATE>" in last_message
+            response_stream = current_agent.chat(last_message)
+            last_message_chunks: list[str] = []
 
-            # Check for termination token.
-            if terminate:
-                # Remove <TERMINATE> from the message to not pollute the conversation log.
-                last_message = last_message.replace("<TERMINATE>", "").strip()
+            def stream_chunks() -> Iterator[str]:
+                for chunk in response_stream:
+                    last_message_chunks.append(chunk)
+                    yield chunk
 
+            yield (current_agent.name, stream_chunks())
+
+            # stream_chunks must be exhausted before this function is called again.
+            assert next(response_stream, None) is None
+
+            last_message = "".join(last_message_chunks).strip()
             self._conversation_log.append(
                 {"agent": current_agent.name, "content": last_message}
             )
-            yield (current_agent.name, last_message)
-            is_agent1_turn = not is_agent1_turn
 
-            if terminate:
+            # Check for termination token.
+            if self.allow_termination and "<TERMINATE>" in last_message:
                 break
+
+            is_agent1_turn = not is_agent1_turn
