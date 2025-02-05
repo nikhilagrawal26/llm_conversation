@@ -23,6 +23,15 @@ class AgentConfig(BaseModel):
     )
     ctx_size: int = Field(default=2048, ge=0, description="Context size for the model")
 
+    @field_validator("model")
+    @classmethod
+    def validate_model(cls, value: str) -> str:
+        available_models = get_available_models()
+        if value not in available_models:
+            raise ValueError(f"Model '{value}' is not available")
+
+        return value
+
 
 class ConversationSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
