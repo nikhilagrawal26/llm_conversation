@@ -47,7 +47,9 @@ If no configuration file is provided, the program will guide you through an intu
 
 ### Configuration File
 
-Alternatively, you can provide a JSON configuration file with the following structure:
+Alternatively, instead of going through the interactive setup, you may also provide a JSON configuration file with the `-c` flag.
+
+#### Example configuration
 
 ```json
 {
@@ -73,6 +75,27 @@ Alternatively, you can provide a JSON configuration file with the following stru
 }
 ```
 
+#### Agent configuration
+
+Each agent (`agent1` and `agent2`) requires:
+
+- `name`: A unique identifier for the agent
+- `model`: The Ollama model to be used
+- `system_prompt`: Initial instructions defining the agent's behavior
+
+Optional parameters:
+- `temperature` (0.0-1.0, default: 0.8): Controls response randomness
+  - Lower values make responses more focused
+  - Higher values increase creativity
+- `ctx_size` (default: 2048): Maximum context length for the conversation
+
+#### Conversation Settings
+
+The `settings` section controls overall conversation behavior:
+- `allow_termination` (default: `false`): Permit agents to end the conversation
+- `use_markdown` (default: `false`): Enable Markdown text formatting
+- `initial_message` (default: `null`): Optional starting prompt for the conversation
+
 You can take a look at the [JSON configuration schema](schema.json) for more details.
 
 ### Running the Program
@@ -95,7 +118,7 @@ You can take a look at the [JSON configuration schema](schema.json) for more det
 ### Conversation Controls
 
 - The conversation will continue until:
-  - An agent uses the `<TERMINATE>` token (if enabled)
+  - An agent terminates the conversation (if termination is enabled)
   - The user interrupts with `Ctrl+C`
 
 ## Output Format
