@@ -46,6 +46,12 @@
         "ConversationSettings": {
             "additionalProperties": false,
             "properties": {
+                "use_markdown": {
+                    "default": false,
+                    "description": "Enable Markdown formatting",
+                    "title": "Use Markdown",
+                    "type": "boolean"
+                },
                 "allow_termination": {
                     "default": false,
                     "description": "Allow AI agents to terminate the conversation",

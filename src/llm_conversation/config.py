@@ -36,6 +36,7 @@ class AgentConfig(BaseModel):
 class ConversationSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    use_markdown: bool = Field(default=False, description="Enable Markdown formatting")
     allow_termination: bool = Field(
         default=False, description="Allow AI agents to terminate the conversation"
     )
