@@ -32,8 +32,7 @@ class ConversationManager:
                 "Examples: *italic*, **bold**, `code`, [link](https://example.com), etc."
             )
 
-        # TODO: Make the <TERMINATE> token prompt stronger. Right now the agent often confuses it or forgets about it
-        # and can't use it properly.
+        # TODO: Use structured output instead of <TERMINATE> token.
         if self.allow_termination:
             instruction += (
                 "\n\nYou may terminate the conversation with the `<TERMINATE>` token "
