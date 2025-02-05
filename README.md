@@ -11,7 +11,7 @@ A Python application that enables conversations between LLM agents using the Oll
   - Context size
   - System Prompt
 - Real-time streaming of agent responses, giving it an interactive feel
-- Ability for agents to terminate conversations on their (if enabled)
+- Ability for agents to terminate conversations on their own (if enabled)
 - Configuration via JSON file or interactive setup
 - Ability to save conversation logs to a file
 
