@@ -46,10 +46,10 @@ mypy = "^1.15.0"
 llm-conversation = "llm_conversation:main"
 
 [project.urls]
-homepage = "https://github.com/famiu/llm_conversation"
-source = "https://github.com/famiu/llm_conversation"
-documentation = "https://github.com/famiu/llm_conversation/blob/main/README.md"
-issues = "https://github.com/famiu/llm_conversation/issues"
+Homepage = "https://github.com/famiu/llm_conversation"
+Repository = "https://github.com/famiu/llm_conversation"
+Documentation = "https://github.com/famiu/llm_conversation/blob/main/README.md"
+Issues = "https://github.com/famiu/llm_conversation/issues"
 
 [tool.ruff]
 line-length = 120
