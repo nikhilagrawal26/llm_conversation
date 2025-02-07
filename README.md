@@ -100,9 +100,9 @@ You can take a look at the [JSON configuration schema](schema.json) for more det
 
 ### Installation
 
-You can install the program by using the following command from the project root directory:
+You can install the program by using the following command:
 ```
-pip install .
+pip install llm-conversation
 ```
 
 ### Running the Program
