@@ -2,6 +2,7 @@
     "$defs": {
         "AgentConfig": {
             "additionalProperties": false,
+            "description": "Configuration for an AI agent.",
             "properties": {
                 "name": {
                     "description": "Name of the AI agent",
@@ -45,6 +46,7 @@
         },
         "ConversationSettings": {
             "additionalProperties": false,
+            "description": "Extra settings for the conversation, not specific to any AI agent.",
             "properties": {
                 "use_markdown": {
                     "default": false,
@@ -77,6 +79,7 @@
         }
     },
     "additionalProperties": false,
+    "description": "Configuration for the AI agents and conversation settings.",
     "properties": {
         "agent1": {
             "$ref": "#/$defs/AgentConfig",

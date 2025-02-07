@@ -18,9 +18,9 @@ A Python application that enables conversations between LLM agents using the Oll
 
 ## Prerequisites
 
-- Python 3.12
+- Python 3.13
 - Ollama installed and running
-- Required Python packages (install via `pip install -r requirements.txt`):
+- Required Python packages:
   - ollama
   - rich
   - prompt_toolkit
@@ -31,7 +31,7 @@ A Python application that enables conversations between LLM agents using the Oll
 ### Command Line Arguments
 
 ```bash
-run.py [-h] [-o OUTPUT] [-c CONFIG]
+llm-conversation [-h] [-o OUTPUT] [-c CONFIG]
 
 options:
   -h, --help            Show this help message and exit
@@ -98,21 +98,28 @@ The `settings` section controls overall conversation behavior:
 
 You can take a look at the [JSON configuration schema](schema.json) for more details.
 
+### Installation
+
+You can install the program by using the following command from the project root directory:
+```
+pip install .
+```
+
 ### Running the Program
 
 1. To run with interactive setup:
    ```bash
-   ./run.py
+   llm-conversation
    ```
 
 2. To run with a configuration file:
    ```bash
-   ./run.py -c config.json
+   llm-conversation -c config.json
    ```
 
 3. To save the conversation to a file:
    ```bash
-   ./run.py -o conversation.txt
+   llm-conversation -o conversation.txt
    ```
 
 ### Conversation Controls

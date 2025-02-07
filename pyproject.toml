@@ -1,0 +1,90 @@
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "llm-conversation"
+version = "0.1.0"
+description = "A tool for LLM agent conversations"
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{name = "Famiu Haque", email = "famiuhaque@proton.me"}]
+keywords = ["llm", "conversation", "ai", "agent", "chat", "prompt"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Environment :: Console",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+requires-python = ">=3.13,<4.0"
+dependencies = [
+    "ollama>=0.4.7,<0.5.0",
+    "rich>=13.9.4,<14.0.0",
+    "prompt_toolkit>=3.0.50,<4.0.0",
+    "pydantic>=2.10.6,<3.0.0",
+]
+
+[tool.poetry]
+include = ["schema.json"]
+exclude = ["scripts/"]
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.9.4"
+mypy = "^1.15.0"
+
+[project.scripts]
+llm-conversation = "llm_conversation:main"
+
+[project.urls]
+homepage = "https://github.com/famiu/llm_conversation"
+source = "https://github.com/famiu/llm_conversation"
+documentation = "https://github.com/famiu/llm_conversation/blob/main/README.md"
+issues = "https://github.com/famiu/llm_conversation/issues"
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py313"
+
+[tool.ruff.format]
+indent-style = "space"
+docstring-code-format = true
+
+[tool.ruff.lint]
+# Enable all `pydocstyle` rules, limiting to those that adhere to the
+# Google convention via `convention = "google"`, below.
+select = ["D"]
+
+# On top of the Google convention, disable `D417`, which requires
+# documentation for every function parameter.
+ignore = ["D417"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+files = ["src/", "scripts/"]
+python_version = "3.13"
+strict = true
+disallow_untyped_defs = true
+disallow_any_unimported = true
+warn_return_any = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[tool.pyright]
+exclude = [".venv", "**/__pycache__"]
+venvPath = "."
+venv = ".venv"
+reportAny = false

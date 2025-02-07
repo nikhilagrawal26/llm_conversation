@@ -1,10 +1,12 @@
+"""Main module for LLM Conversation package."""
+
 import argparse
 from collections.abc import Iterator
 from pathlib import Path
 
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
-from rich.console import Console, Group
+from rich.console import Console
 from rich.live import Live
 from rich.markdown import Markdown
 from rich.text import Text
@@ -26,6 +28,15 @@ def create_ai_agent_from_config(config: AgentConfig) -> AIAgent:
 
 
 def create_ai_agent_from_input(console: Console, agent_number: int) -> AIAgent:
+    """Create an AIAgent instance from user input.
+
+    Args:
+        console (Console): Rich console instance.
+        agent_number (int): Number of the AI agent, used for display.
+
+    Returns:
+        AIAgent: Created AI agent instance.
+    """
     console.print(f"=== Creating AI Agent {agent_number} ===", style="bold cyan")
 
     available_models = get_available_models()
@@ -55,7 +66,8 @@ def create_ai_agent_from_input(console: Console, agent_number: int) -> AIAgent:
             temperature_str: str = prompt("Enter temperature (default: 0.8): ") or "0.8"
             temperature: float = float(temperature_str)
             if not (0.0 <= temperature <= 1.0):
-                raise ValueError("Temperature must be between 0.0 and 1.0")
+                msg = "Temperature must be between 0.0 and 1.0"
+                raise ValueError(msg)
             break
         except ValueError as e:
             console.print(f"Invalid input: {e}", style="bold red")
@@ -65,7 +77,8 @@ def create_ai_agent_from_input(console: Console, agent_number: int) -> AIAgent:
             ctx_size_str: str = prompt("Enter context size (default: 2048): ") or "2048"
             ctx_size: int = int(ctx_size_str)
             if ctx_size < 0:
-                raise ValueError("Context size must be a non-negative integer")
+                msg = "Context size must be a non-negative integer"
+                raise ValueError(msg)
             break
         except ValueError as e:
             console.print(f"Invalid input: {e}", style="bold red")
@@ -101,9 +114,8 @@ def display_message(
     name_color: str,
     message_stream: Iterator[str],
     use_markdown: bool = False,
-):
-    """
-    Display a message from an agent in the console.
+) -> None:
+    """Display a message from an agent in the console.
 
     Args:
         console (Console): Rich console instance.
@@ -125,6 +137,15 @@ def display_message(
 
 
 def prompt_bool(prompt_text: str, default: bool = False) -> bool:
+    """Prompt the user with a yes/no question and return the response as a boolean.
+
+    Args:
+        prompt_text (str): Prompt text to display.
+        default (bool, optional): Default value to return if the user input is invalid. Defaults to False.
+
+    Returns:
+        bool: True if the user input is "yes" or "y" (case-insensitive), False otherwise.
+    """
     response = prompt(prompt_text).lower()
 
     if not response or response not in ["y", "yes", "n", "no"]:
@@ -133,14 +154,12 @@ def prompt_bool(prompt_text: str, default: bool = False) -> bool:
     return response[0] == "y"
 
 
-def main():
+# TODO: Add a GUI.
+def main() -> None:
+    """Run a conversation between AI agents."""
     parser = argparse.ArgumentParser(description="Run a conversation between AI agents")
-    _ = parser.add_argument(
-        "-o", "--output", type=Path, help="Path to save the conversation log to"
-    )
-    _ = parser.add_argument(
-        "-c", "--config", type=Path, help="Path to JSON configuration file"
-    )
+    _ = parser.add_argument("-o", "--output", type=Path, help="Path to save the conversation log to")
+    _ = parser.add_argument("-c", "--config", type=Path, help="Path to JSON configuration file")
     args = parser.parse_args()
 
     color1: str = "blue"
@@ -167,12 +186,8 @@ def main():
         agent2 = create_ai_agent_from_input(console, 2)
         console.clear()
 
-        use_markdown = prompt_bool(
-            "Use Markdown for text formatting? (y/N): ", default=False
-        )
-        allow_termination = prompt_bool(
-            "Allow AI agents to terminate the conversation? (y/N): ", default=False
-        )
+        use_markdown = prompt_bool("Use Markdown for text formatting? (y/N): ", default=False)
+        allow_termination = prompt_bool("Allow AI agents to terminate the conversation? (y/N): ", default=False)
         initial_message = prompt("Enter initial message (can be empty): ") or None
 
         console.clear()
