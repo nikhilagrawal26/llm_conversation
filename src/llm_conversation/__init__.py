@@ -7,6 +7,7 @@ from pathlib import Path
 
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.validation import Validator
 from rich.console import Console
 from rich.live import Live
 from rich.markdown import Markdown
@@ -46,43 +47,57 @@ def create_ai_agent_from_input(console: Console, agent_number: int) -> AIAgent:
         console.print(Text("• " + model))
     console.print("")
 
-    while True:
-        model_completer = WordCompleter(available_models, ignore_case=True)
-        model_name = (
-            prompt(
-                f"Enter model name (default: {available_models[0]}): ",
-                completer=model_completer,
-                complete_while_typing=True,
-            )
-            or available_models[0]
+    model_completer = WordCompleter(available_models, ignore_case=True)
+    model_name = (
+        prompt(
+            f"Enter model name (default: {available_models[0]}): ",
+            completer=model_completer,
+            complete_while_typing=True,
+            validator=Validator.from_callable(
+                lambda text: text == "" or text in available_models,
+                error_message="Model not found",
+                move_cursor_to_end=True,
+            ),
+            validate_while_typing=False,
         )
+        or available_models[0]
+    )
 
-        if model_name in available_models:
-            break
-
-        console.print("Invalid model name!", style="bold red")
-
-    while True:
+    def _validate_float(text: str) -> bool:
+        if text == "":
+            return True
         try:
-            temperature_str: str = prompt("Enter temperature (default: 0.8): ") or "0.8"
-            temperature: float = float(temperature_str)
-            if not (0.0 <= temperature <= 1.0):
-                msg = "Temperature must be between 0.0 and 1.0"
-                raise ValueError(msg)
-            break
-        except ValueError as e:
-            console.print(f"Invalid input: {e}", style="bold red")
+            _ = float(text)
+        except ValueError:
+            return False
 
-    while True:
-        try:
-            ctx_size_str: str = prompt("Enter context size (default: 2048): ") or "2048"
-            ctx_size: int = int(ctx_size_str)
-            if ctx_size < 0:
-                msg = "Context size must be a non-negative integer"
-                raise ValueError(msg)
-            break
-        except ValueError as e:
-            console.print(f"Invalid input: {e}", style="bold red")
+        return True
+
+    temperature_str: str = (
+        prompt(
+            "Enter temperature (default: 0.8): ",
+            validator=Validator.from_callable(
+                lambda text: text == "" or _validate_float(text) and 0.0 <= float(text) <= 1.0,
+                error_message="Temperature must be a number between 0.0 and 1.0",
+                move_cursor_to_end=True,
+            ),
+        )
+        or "0.8"
+    )
+    temperature: float = float(temperature_str)
+
+    ctx_size_str: str = (
+        prompt(
+            "Enter context size (default: 2048): ",
+            validator=Validator.from_callable(
+                lambda text: text == "" or text.isdigit() and int(text) >= 0,
+                error_message="Context size must be a non-negative integer",
+                move_cursor_to_end=True,
+            ),
+        )
+        or "2048"
+    )
+    ctx_size: int = int(ctx_size_str)
 
     name = prompt(f"Enter name (default: AI {agent_number}): ") or f"AI {agent_number}"
     system_prompt = prompt(f"Enter system prompt for {name}: ")
