@@ -40,6 +40,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install poetry
+          # poetry-dynamic-versioning is needed for dynamic versioning support
+          poetry self add "poetry-dynamic-versioning[plugin]"
 
       - name: Build project
         run: poetry build
