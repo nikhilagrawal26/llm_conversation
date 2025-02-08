@@ -2,6 +2,7 @@
 
 import argparse
 from collections.abc import Iterator
+from importlib.metadata import version
 from pathlib import Path
 
 from prompt_toolkit import prompt
@@ -158,6 +159,7 @@ def prompt_bool(prompt_text: str, default: bool = False) -> bool:
 def main() -> None:
     """Run a conversation between AI agents."""
     parser = argparse.ArgumentParser(description="Run a conversation between AI agents")
+    _ = parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {version('llm-conversation')}")
     _ = parser.add_argument("-o", "--output", type=Path, help="Path to save the conversation log to")
     _ = parser.add_argument("-c", "--config", type=Path, help="Path to JSON configuration file")
     args = parser.parse_args()
