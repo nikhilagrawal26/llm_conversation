@@ -1,12 +1,11 @@
 name: Publish to PyPI
 
 on:
-  pull_request:
-    branches:
-      - main
+  release:
+    types: [published]
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   pypi-publish:
