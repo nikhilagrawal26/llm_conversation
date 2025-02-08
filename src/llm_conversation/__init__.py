@@ -185,9 +185,6 @@ def main() -> None:
     console = Console()
     console.clear()
 
-    console = Console()
-    console.clear()
-
     if args.config:
         # Load from config file
         config = load_config(args.config)
