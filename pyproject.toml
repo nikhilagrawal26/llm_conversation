@@ -61,9 +61,24 @@ indent-style = "space"
 docstring-code-format = true
 
 [tool.ruff.lint]
-# Enable all `pydocstyle` rules, limiting to those that adhere to the
-# Google convention via `convention = "google"`, below.
-select = ["D"]
+select = [
+    # PEP8 (Errors)
+    "E",
+    # PEP8 (Warnings)
+    "W",
+    # Pyflakes
+    "F",
+    # Import order
+    "I",
+    # Docstring conventions
+    "D",
+    # Naming conventions
+    "N",
+    # Simplifications
+    "SIM",
+    # Upgrade syntax
+    "UP"
+]
 
 # On top of the Google convention, disable `D417`, which requires
 # documentation for every function parameter.
