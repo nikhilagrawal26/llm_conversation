@@ -8,6 +8,7 @@ A Python application that enables conversations between multiple LLM agents usin
   - Ollama (local models)
   - OpenAI (GPT-5, GPT-5-mini, GPT-5-nano, o4-high, etc.)
   - Anthropic (Claude)
+  - Google (Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.0 Flash, etc.)
   - OpenRouter, Together, Groq, DeepSeek, and any other provider with an OpenAI compatible API.
 - Flexible configuration via JSON file or interactive setup
 - Multiple conversation turn orders (round-robin, random, chain, moderator, vote)
@@ -89,9 +90,11 @@ You can provide a JSON configuration file using the `-c` flag for reproducible c
 {
   "providers": {
     "openai": {
-      "api_key": "your-api-key-here",
-      "anthropic": "your-api-key-here"
+      "api_key": "your-api-key-here"
     },
+    "anthropic": {
+      "api_key": "your-api-key-here"
+    }
   },
   "agents": [
     {
@@ -137,9 +140,10 @@ The `providers` section defines API endpoints and credentials:
 
 Built-in providers (base_url automatically configured):
 
-- `openai`: OpenAI GPT models
 - `ollama`: Local Ollama models
+- `openai`: OpenAI GPT models
 - `anthropic`: Anthropic Claude models
+- `google`: Google Gemini models
 - `openrouter`: OpenRouter proxy service
 - `together`: Together AI models
 - `groq`: Groq inference service
@@ -204,12 +208,14 @@ You can take a look at the [JSON configuration schema](schema.json) for more det
 ### Conversation Controls
 
 The conversation will continue until:
+
 - An agent terminates the conversation (if termination is enabled)
 - The user interrupts with `Ctrl+C`
 
 ## Output Format
 
 When saving conversations, the output file includes:
+
 - Configuration details for both agents
 - Complete conversation history with agent names and messages
 
